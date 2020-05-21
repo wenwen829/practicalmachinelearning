@@ -12,7 +12,7 @@ knitr::opts_chunk$set(message=FALSE)
 
 ## Data Loading and Preparation
 When loading the data, I discarded the first column for both testing and training set as it is just a row number index. The original dataset values that cannot be interpreted such as blank space or "#DIV/0!" are set as NA values.
-```{r librariesanddata, cache=TRUE}
+```{r librariesanddata}
 library(caret);library(data.table)
 library(tidyr);library(parallel);library(doParallel)
 train = read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", na.strings=c("NA","#DIV/0!",""))[,-1]
@@ -56,7 +56,8 @@ nzv <- nearZeroVar(training, saveMetrics=TRUE)
 any(nzv$nzv)
 dim(training)
 ```
-There is no predictor with zero variance, therefore I will keep the 53 predictors and build a model with them using random forest. 
+There is no predictor with zero variance, therefore I will keep the 52 predictors and build a model with them using random forest. 
+
 ## Model Training
 As described in [Required Model Accuracy](https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-requiredModelAccuracy.md), the probability of correctly predicting all 20 test cases even with a model at 95% accuracy is only 0.36. Therefore, it is recommended to use an algorithm that has at least 99% accuracy to have a reasonable probability of obtaining a perfect score on the final quiz. 
 In order to perform a parallel implementation of random forest, I will start with configuring paralllel processing and trainControl object before developing the model using training data. 
@@ -89,12 +90,13 @@ First I want to look at the model accurancy using training data.
 predicted<-predict(fit, trainingT[,-1])
 confusionMatrix(predicted, trainingT[,classe])
 ```
-
+The accurancy for in sample prediction is approximately 100%, which meets my expectation at > 99%. Now I test the model for its out of sample error using the testing data. 
 ```{r testp}
 predicted <- predict(fit, probingT[,-1])
 confusionMatrix(predicted, probingT[,classe])
 ```
-
+The accurancy of fit model for predicting out of sample data is around 99% again, I consider this a desirable result and will use the model to answer my assignment question.
 ```{r testp1}
 predtest<-predict(fit, testingT)
+predtest
 ```
