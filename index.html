@@ -444,11 +444,54 @@ fit</code></pre>
 <p>The summary above shows that the model contains 52 predictors as the independent variables and one dependent variable with five classes. After generating the model, I shut down the cluster by calling the stopCluster() and registerDoSEQ() functions.</p>
 <pre class="r"><code>stopCluster(cluster)
 registerDoSEQ()</code></pre>
-<p>Now I have acquired my trained model named fit, I will move on to the evaluation step of model accurancy.</p>
+<p>Since I have acquired my trained model, I will move on to the evaluation step of model accurancy.</p>
 </div>
 <div id="model-testing" class="section level2">
 <h2>Model Testing</h2>
-<p>First I want to look at the model accurancy using training data.</p>
+<p>First I want to look at the importance of each predictor in the final model.</p>
+<pre class="r"><code>varImp(fit)</code></pre>
+<pre><code>## rf variable importance
+## 
+##   only 20 most important variables shown (out of 52)
+## 
+##                      Overall
+## roll_belt             100.00
+## yaw_belt               81.60
+## magnet_dumbbell_z      69.64
+## pitch_belt             60.71
+## magnet_dumbbell_y      60.11
+## pitch_forearm          59.18
+## roll_forearm           53.00
+## magnet_dumbbell_x      51.79
+## accel_belt_z           45.79
+## accel_dumbbell_y       45.02
+## magnet_belt_y          42.77
+## roll_dumbbell          42.61
+## magnet_belt_z          40.97
+## roll_arm               36.13
+## accel_forearm_x        34.69
+## accel_dumbbell_z       33.96
+## gyros_belt_z           30.42
+## accel_dumbbell_x       28.58
+## yaw_dumbbell           28.44
+## total_accel_dumbbell   28.41</code></pre>
+<pre class="r"><code>fit$finalModel</code></pre>
+<pre><code>## 
+## Call:
+##  randomForest(x = x, y = y, mtry = param$mtry, data = ..1) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 2
+## 
+##         OOB estimate of  error rate: 0.68%
+## Confusion matrix:
+##      A    B    C    D    E  class.error
+## A 4181    3    1    0    0 0.0009557945
+## B   15 2829    4    0    0 0.0066713483
+## C    0   22 2544    1    0 0.0089598753
+## D    0    0   47 2362    3 0.0207296849
+## E    0    0    0    4 2702 0.0014781966</code></pre>
+<p>Now I have identified the predictor that is most importance in predicting classes, I will test the accurance using both training and testing data set.</p>
 <pre class="r"><code>predicted&lt;-predict(fit, trainingT[,-1])
 confusionMatrix(predicted, trainingT[,classe])</code></pre>
 <pre><code>## Confusion Matrix and Statistics
@@ -518,11 +561,30 @@ confusionMatrix(predicted, probingT[,classe])</code></pre>
 ## Detection Rate         0.2843   0.1921   0.1723   0.1617   0.1831
 ## Detection Prevalence   0.2851   0.1939   0.1750   0.1625   0.1835
 ## Balanced Accuracy      0.9991   0.9952   0.9925   0.9927   0.9981</code></pre>
-<p>The accurancy of fit model for predicting out of sample data is around 99% again, I consider this a desirable result and will use the model to answer my assignment question.</p>
+<p>The accurancy of fit model for predicting out of sample data is around 99% again, I consider this a desirable result and will use the model to answer my assignment question by predicting the 20 test classes.</p>
 <pre class="r"><code>predtest&lt;-predict(fit, testingT)
-predtest</code></pre>
-<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
-## Levels: A B C D E</code></pre>
+as.data.frame(cbind(seq(1,20),as.character(predtest), as.character(testing[,1])))</code></pre>
+<pre><code>##    V1 V2       V3
+## 1   1  B    pedro
+## 2   2  A   jeremy
+## 3   3  B   jeremy
+## 4   4  A   adelmo
+## 5   5  A   eurico
+## 6   6  E   jeremy
+## 7   7  D   jeremy
+## 8   8  B   jeremy
+## 9   9  A carlitos
+## 10 10  A  charles
+## 11 11  B carlitos
+## 12 12  C   jeremy
+## 13 13  B   eurico
+## 14 14  A   jeremy
+## 15 15  E   jeremy
+## 16 16  E   eurico
+## 17 17  A    pedro
+## 18 18  B carlitos
+## 19 19  B    pedro
+## 20 20  B   eurico</code></pre>
 </div>
 
 
