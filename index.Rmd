@@ -7,24 +7,94 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message=FALSE)
 ```
 
-## R Markdown
+## Data Loading and Preparation
+When loading the data, I discarded the first column for both testing and training set as it is just a row number index. The original dataset values that cannot be interpreted such as blank space or "#DIV/0!" are set as NA values.
+```{r librariesanddata, cache=TRUE}
+library(caret);library(data.table)
+library(tidyr);library(parallel);library(doParallel)
+train = read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", na.strings=c("NA","#DIV/0!",""))[,-1]
+testing = read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", na.strings=c("NA","#DIV/0!",""))[,-1]
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```
+I notice there are columns mostly consist of empty values, and for the convenience of model building, I decided to remove all columns that contains NA values. Also, based on the information provided on this experiment [here](http://groupware.les.inf.puc-rio.br/har), the most useful predictors for my model would be motion data collected from sensors on the dumbbell, forearm, arm and belt. Thereby, I used grep() on the column names to get rid of uninteresting information such as time stamps from my practice dataset. The following codes identifies names of columns/predictors that I am interested in keeping for model building.
+```{r select}
+Missings <- sapply(testing, function (x) any(is.na(x)))
+Predictor <- !Missings & grepl("belt|arm|dumbbell", names(Missings))
+predictors <- names(Missings)[Predictor]
+```
+In order to test the out of sample error of my final order, we need to subset the training data into training and testing sessions at a ratio of 75:25. The original testing dataset doesn't have classe information, therefore cannot be cross validated. 
+```{r partition}
+set.seed(10829)
+inTrain <- createDataPartition(train$classe, p=0.75, list = FALSE)
+training <- train[inTrain,]
+probing <- train[-inTrain,]
+```
+Next I am centering and scaling all predictors in the training and testing dataset.
+```{r scaling}
+#Apply centering and scaling to the training dataset.
+training<- training[, c("classe", predictors)]
+temp <- training[, predictors]
+Proc <- preProcess(temp)
+Temp <- predict(Proc, temp)
+trainingT<- data.table(data.frame(classe = training$classe, Temp))
+#Apply centering and scaling to the probing dataset.
+temp <- probing[, predictors]
+Temp <- predict(Proc, temp)
+probingT <- data.table(data.frame(classe = probing$classe, Temp))
+#Apply the centering and scaling to testing dataset
+temp<-testing[,predictors]
+Temp<-predict(Proc, temp)
+testingT<-data.table(Temp)
+```
+Then I use nearZeroVar() to check if there is any predictor with near to 0 variance after scaling, if any, this predictor will be removed from my model as it doesn't provide much information on the dependent variable. 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r zerovariance}
+nzv <- nearZeroVar(training, saveMetrics=TRUE)
+any(nzv$nzv)
+dim(training)
+```
+There is no predictor with zero variance, therefore I will keep the 53 predictors and build a model with them using random forest. 
+## Model Training
+As described in [Required Model Accuracy](https://github.com/lgreski/datasciencectacontent/blob/master/markdown/pml-requiredModelAccuracy.md), the probability of correctly predicting all 20 test cases even with a model at 95% accuracy is only 0.36. Therefore, it is recommended to use an algorithm that has at least 99% accuracy to have a reasonable probability of obtaining a perfect score on the final quiz. 
+In order to perform a parallel implementation of random forest, I will start with configuring paralllel processing and trainControl object before developing the model using training data. 
+```{r configre}
+#Configure parallel processing
+cluster <- makeCluster(detectCores() - 1) # convention to leave 1 core for OS
+registerDoParallel(cluster)
+#Configure trainControl object
+fitControl <- trainControl(method = "cv",
+                           number = 5,
+                           allowParallel = TRUE)
+```
+Use caret::train() to train the model with trainControl() object that I just created.
+```{r training, cache=TRUE}
+x<-trainingT[,-1];y<-trainingT$classe
+set.seed(10829)
+fit <- train(x,y, method="rf",data=train,trControl = fitControl)
+fit
+```
+The summary above shows that the model contains 52 predictors as the independent variables and one dependent variable with five classes. After generating the model, I shut down the cluster by calling the stopCluster() and registerDoSEQ() functions. 
+```{r dereg}
+stopCluster(cluster)
+registerDoSEQ()
+```
+Now I have acquired my trained model named fit, I will move on to the evaluation step of model accurancy. 
 
-```{r cars}
-summary(cars)
+## Model Testing
+First I want to look at the model accurancy using training data. 
+```{r trainp}
+predicted<-predict(fit, trainingT[,-1])
+confusionMatrix(predicted, trainingT[,classe])
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r testp}
+predicted <- predict(fit, probingT[,-1])
+confusionMatrix(predicted, probingT[,classe])
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r testp1}
+predtest<-predict(fit, testingT)
+```
