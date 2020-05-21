@@ -82,7 +82,7 @@ The summary above shows that the model contains 52 predictors as the independent
 stopCluster(cluster)
 registerDoSEQ()
 ```
-Now I have acquired my trained model named fit, I will move on to the evaluation step of model accurancy. 
+Since I have acquired my trained model, I will move on to the evaluation step of model accurancy. 
 
 ## Model Testing
 First I want to look at the model accurancy using training data. 
@@ -95,8 +95,8 @@ The accurancy for in sample prediction is approximately 100%, which meets my exp
 predicted <- predict(fit, probingT[,-1])
 confusionMatrix(predicted, probingT[,classe])
 ```
-The accurancy of fit model for predicting out of sample data is around 99% again, I consider this a desirable result and will use the model to answer my assignment question.
-```{r testp1}
+The accurancy of fit model for predicting out of sample data is around 99% again, I consider this a desirable result and will use the model to answer my assignment question by predicting the 20 test classes.
+```{r testp1, warning=FALSE}
 predtest<-predict(fit, testingT)
-predtest
+as.data.frame(cbind(seq(1,20),as.character(predtest), as.character(testing[,1])))
 ```

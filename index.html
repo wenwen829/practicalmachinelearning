@@ -444,7 +444,7 @@ fit</code></pre>
 <p>The summary above shows that the model contains 52 predictors as the independent variables and one dependent variable with five classes. After generating the model, I shut down the cluster by calling the stopCluster() and registerDoSEQ() functions.</p>
 <pre class="r"><code>stopCluster(cluster)
 registerDoSEQ()</code></pre>
-<p>Now I have acquired my trained model named fit, I will move on to the evaluation step of model accurancy.</p>
+<p>Since I have acquired my trained model, I will move on to the evaluation step of model accurancy.</p>
 </div>
 <div id="model-testing" class="section level2">
 <h2>Model Testing</h2>
@@ -518,11 +518,30 @@ confusionMatrix(predicted, probingT[,classe])</code></pre>
 ## Detection Rate         0.2843   0.1921   0.1723   0.1617   0.1831
 ## Detection Prevalence   0.2851   0.1939   0.1750   0.1625   0.1835
 ## Balanced Accuracy      0.9991   0.9952   0.9925   0.9927   0.9981</code></pre>
-<p>The accurancy of fit model for predicting out of sample data is around 99% again, I consider this a desirable result and will use the model to answer my assignment question.</p>
+<p>The accurancy of fit model for predicting out of sample data is around 99% again, I consider this a desirable result and will use the model to answer my assignment question by predicting the 20 test classes.</p>
 <pre class="r"><code>predtest&lt;-predict(fit, testingT)
-predtest</code></pre>
-<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
-## Levels: A B C D E</code></pre>
+as.data.frame(cbind(seq(1,20),as.character(predtest), as.character(testing[,1])))</code></pre>
+<pre><code>##    V1 V2       V3
+## 1   1  B    pedro
+## 2   2  A   jeremy
+## 3   3  B   jeremy
+## 4   4  A   adelmo
+## 5   5  A   eurico
+## 6   6  E   jeremy
+## 7   7  D   jeremy
+## 8   8  B   jeremy
+## 9   9  A carlitos
+## 10 10  A  charles
+## 11 11  B carlitos
+## 12 12  C   jeremy
+## 13 13  B   eurico
+## 14 14  A   jeremy
+## 15 15  E   jeremy
+## 16 16  E   eurico
+## 17 17  A    pedro
+## 18 18  B carlitos
+## 19 19  B    pedro
+## 20 20  B   eurico</code></pre>
 </div>
 
 
